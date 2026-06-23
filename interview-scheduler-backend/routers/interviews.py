@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from sqlmodel import Session, select, and_, or_
 from datetime import datetime
 from typing import Optional
@@ -7,6 +7,7 @@ import uuid
 
 from models import Interview, InterviewCreate, InterviewUpdate, InterviewStatusUpdate, InterviewStatus, InterviewAuditLog, Candidate
 from database import get_session
+from email_service import send_interview_confirmation, send_status_change_notification
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
 
@@ -46,7 +47,7 @@ def _has_overlap(
 
 
 @router.post("/")
-def create_interview(interview: InterviewCreate, session: Session = Depends(get_session)):
+def create_interview(interview: InterviewCreate, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
     candidate = session.get(Candidate, interview.candidate_id)
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
@@ -86,6 +87,15 @@ def create_interview(interview: InterviewCreate, session: Session = Depends(get_
     session.add(audit)
     session.commit()
     session.refresh(db_interview)
+
+    background_tasks.add_task(
+        send_interview_confirmation,
+        to_email=candidate.email,
+        candidate_name=candidate.name,
+        recruiter_name=interview.recruiter_name,
+        start_time=interview.start_time.isoformat(),
+        end_time=interview.end_time.isoformat(),
+    )
     return db_interview
 
 
@@ -93,6 +103,7 @@ def create_interview(interview: InterviewCreate, session: Session = Depends(get_
 def update_interview_status(
     interview_id: uuid.UUID,
     body: InterviewStatusUpdate,
+    background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
 ):
     interview = session.get(Interview, interview_id)
@@ -122,6 +133,19 @@ def update_interview_status(
     session.add(interview)
     session.commit()
     session.refresh(interview)
+
+    candidate = session.get(Candidate, interview.candidate_id)
+    if candidate:
+        background_tasks.add_task(
+            send_status_change_notification,
+            to_email=candidate.email,
+            candidate_name=candidate.name,
+            recruiter_name=interview.recruiter_name,
+            new_status=body.status.value,
+            start_time=interview.start_time.isoformat(),
+            end_time=interview.end_time.isoformat(),
+        )
+
     return interview
 
 
