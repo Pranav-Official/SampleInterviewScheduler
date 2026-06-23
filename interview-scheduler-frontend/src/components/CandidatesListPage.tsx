@@ -1,20 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import type { Candidate } from '../api/types';
+import { useDebounce } from '../hooks/useDebounce';
 import { CandidatesService } from '../api';
 import { CandidateDetailModal } from './CandidateDetailModal';
 import { AddCandidateModal } from './AddCandidateModal';
 import { ScheduleInterviewModal } from './ScheduleInterviewModal';
-
-interface Candidate {
-  id: string;
-  name: string;
-  email: string;
-  phonenumber?: string | null;
-  experience: number;
-  skills?: string[];
-  createdat?: string;
-  modifiedat?: string;
-}
 
 export function CandidatesListPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -25,6 +16,11 @@ export function CandidatesListPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [showAddCandidate, setShowAddCandidate] = useState(false);
   const [scheduleCandidate, setScheduleCandidate] = useState<Candidate | null>(null);
+
+  const debouncedName = useDebounce(nameFilter, 300);
+  const debouncedSkills = useDebounce(skillsFilter, 300);
+  const debouncedExperience = useDebounce(experienceFilter, 300);
+
   const recruiterName = localStorage.getItem('recruiter_name')
     ? JSON.parse(localStorage.getItem('recruiter_name')!)
     : '';
@@ -32,11 +28,11 @@ export function CandidatesListPage() {
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
     try {
-      const experience = experienceFilter ? Number(experienceFilter) : undefined;
-      const skills = skillsFilter
-        ? skillsFilter.split(',').map((s) => s.trim()).filter(Boolean)
+      const experience = debouncedExperience ? Number(debouncedExperience) : undefined;
+      const skills = debouncedSkills
+        ? debouncedSkills.split(',').map((s) => s.trim()).filter(Boolean)
         : undefined;
-      const name = nameFilter.trim() || undefined;
+      const name = debouncedName.trim() || undefined;
 
       const result = await CandidatesService.getCandidatesCandidatesGet(
         50,
@@ -52,7 +48,7 @@ export function CandidatesListPage() {
     } finally {
       setLoading(false);
     }
-  }, [nameFilter, skillsFilter, experienceFilter]);
+  }, [debouncedName, debouncedSkills, debouncedExperience]);
 
   useEffect(() => {
     fetchCandidates();

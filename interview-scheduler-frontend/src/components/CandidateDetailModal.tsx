@@ -1,15 +1,5 @@
+import type { Candidate } from '../api/types';
 import { Modal } from './Modal';
-
-interface Candidate {
-  id: string;
-  name: string;
-  email: string;
-  phonenumber?: string | null;
-  experience: number;
-  skills?: string[];
-  createdat?: string;
-  modifiedat?: string;
-}
 
 interface CandidateDetailModalProps {
   open: boolean;

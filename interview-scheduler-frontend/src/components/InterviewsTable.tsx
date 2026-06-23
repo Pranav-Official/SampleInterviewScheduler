@@ -1,25 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import type { Interview } from '../api/types';
+import { statusColors } from '../api/types';
 import { InterviewsService, InterviewStatus } from '../api';
 import { InterviewDetailModal } from './InterviewDetailModal';
-
-interface Interview {
-  id: string;
-  candidate_id: string;
-  candidate_name?: string;
-  recruiter_name: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  createdat?: string;
-  modifiedat?: string;
-}
-
-const statusColors: Record<string, string> = {
-  Scheduled: 'bg-amber-100 text-amber-700',
-  Completed: 'bg-emerald-100 text-emerald-700',
-  Cancelled: 'bg-red-100 text-red-700',
-};
 
 export function InterviewsTable() {
   const [interviews, setInterviews] = useState<Interview[]>([]);
