@@ -91,6 +91,22 @@ export function useCreateCandidateMutation() {
   });
 }
 
+export function useCreateInterviewMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      candidate_id: string;
+      recruiter_name: string;
+      start_time: string;
+      end_time: string;
+    }) => InterviewsService.createInterviewInterviewsPost(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['interviews'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
 export function useUpdateInterviewStatusMutation() {
   const queryClient = useQueryClient();
   return useMutation({

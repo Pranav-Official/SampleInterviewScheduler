@@ -1,13 +1,11 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useCreateInterviewMutation } from '../hooks/queries';
 import { Modal } from './Modal';
-import { InterviewsService } from '../api';
 
 interface ScheduleInterviewModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
   candidateId: string;
   candidateName: string;
   recruiterName: string;
@@ -21,33 +19,33 @@ interface FormData {
 export function ScheduleInterviewModal({
   open,
   onClose,
-  onSuccess,
   candidateId,
   candidateName,
   recruiterName,
 }: ScheduleInterviewModalProps) {
-  const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
+  const mutation = useCreateInterviewMutation();
+  const { register, handleSubmit, reset, getValues, formState: { errors } } = useForm<FormData>();
 
-  const onSubmit = async (data: FormData) => {
-    setLoading(true);
-    try {
-      await InterviewsService.createInterviewInterviewsPost({
+  const onSubmit = (data: FormData) => {
+    mutation.mutate(
+      {
         candidate_id: candidateId,
         recruiter_name: recruiterName,
         start_time: new Date(data.start_time).toISOString(),
         end_time: new Date(data.end_time).toISOString(),
-      });
-      toast.success('Interview scheduled successfully!');
-      reset();
-      onSuccess();
-      onClose();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to schedule interview';
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success('Interview scheduled successfully!');
+          reset();
+          onClose();
+        },
+        onError: (err) => {
+          const message = err instanceof Error ? err.message : 'Failed to schedule interview';
+          toast.error(message);
+        },
+      },
+    );
   };
 
   const handleClose = () => {
@@ -76,7 +74,13 @@ export function ScheduleInterviewModal({
             id="start_time"
             type="datetime-local"
             className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-            {...register('start_time', { required: 'Start time is required' })}
+            {...register('start_time', {
+              required: 'Start time is required',
+              validate: (value) => {
+                if (!value) return true;
+                return new Date(value) > new Date() || 'Start time must be in the future';
+              },
+            })}
           />
           {errors.start_time && <p className="mt-1 text-sm text-red-600">{errors.start_time.message}</p>}
         </div>
@@ -89,7 +93,20 @@ export function ScheduleInterviewModal({
             id="end_time"
             type="datetime-local"
             className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-            {...register('end_time', { required: 'End time is required' })}
+            {...register('end_time', {
+              required: 'End time is required',
+              validate: (value) => {
+                if (!value) return true;
+                const start = getValues('start_time');
+                if (start && new Date(value) <= new Date(start)) {
+                  return 'End time must be after start time';
+                }
+                if (new Date(value) <= new Date()) {
+                  return 'End time must be in the future';
+                }
+                return true;
+              },
+            })}
           />
           {errors.end_time && <p className="mt-1 text-sm text-red-600">{errors.end_time.message}</p>}
         </div>
@@ -104,10 +121,10 @@ export function ScheduleInterviewModal({
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={mutation.isPending}
             className="flex-1 py-2 px-4 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            {loading ? 'Scheduling...' : 'Schedule Interview'}
+            {mutation.isPending ? 'Scheduling...' : 'Schedule Interview'}
           </button>
         </div>
       </form>

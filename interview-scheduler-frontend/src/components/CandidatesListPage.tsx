@@ -170,7 +170,6 @@ export function CandidatesListPage() {
       <ScheduleInterviewModal
         open={!!scheduleCandidate}
         onClose={() => setScheduleCandidate(null)}
-        onSuccess={() => {}}
         candidateId={scheduleCandidate?.id ?? ''}
         candidateName={scheduleCandidate?.name ?? ''}
         recruiterName={recruiterName}
