@@ -1,5 +1,6 @@
 interview-scheduler-backend/venv
 interview-scheduler-backend/alembic/__pycache__
+interview-scheduler-backend/alembic/versions/__pycache__
 interview-scheduler-backend/__pycache__
 interview-scheduler-backend/routers/__pycache__
 interview-scheduler-backend/*.pyc

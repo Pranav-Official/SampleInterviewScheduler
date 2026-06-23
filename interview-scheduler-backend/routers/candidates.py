@@ -1,9 +1,12 @@
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select, col
+from sqlalchemy import func, cast
+from sqlalchemy.dialects.postgresql import JSONB
 from typing import Optional, List
 from datetime import datetime
 import uuid
+import json
 
 from models import Candidate, CandidateCreate, CandidateUpdate
 from database import get_session
@@ -65,7 +68,7 @@ def get_candidates(
 
     if skills:
         for skill in skills:
-            query = query.where(Candidate.skills.contains([skill]))
+            query = query.where(Candidate.skills.op("?")(skill))
 
     if experience is not None:
         query = query.where(Candidate.experience <= experience)

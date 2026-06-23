@@ -12,7 +12,12 @@ if PG_CONNECTION_STRING and PG_CONNECTION_STRING.startswith("postgresql://"):
 elif PG_CONNECTION_STRING and PG_CONNECTION_STRING.startswith("postgres://"):
     PG_CONNECTION_STRING = PG_CONNECTION_STRING.replace("postgres://", "postgresql+psycopg://", 1)
 
-engine = create_engine(PG_CONNECTION_STRING, echo=True)
+engine = create_engine(
+    PG_CONNECTION_STRING,
+    echo=True,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 
 
 def create_db_and_tables():
