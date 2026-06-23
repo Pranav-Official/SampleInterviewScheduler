@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import interviews, candidates
+from routers import interviews, candidates, dashboard
 from database import engine
 from sqlmodel import SQLModel
 
@@ -7,6 +7,7 @@ app = FastAPI(title="Interview Scheduler API", version="1.0.0")
 
 app.include_router(interviews.router)
 app.include_router(candidates.router)
+app.include_router(dashboard.router)
 
 
 @app.on_event("startup")

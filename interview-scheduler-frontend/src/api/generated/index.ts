@@ -16,5 +16,6 @@ export type { InterviewStatusUpdate } from './models/InterviewStatusUpdate';
 export type { ValidationError } from './models/ValidationError';
 
 export { CandidatesService } from './services/CandidatesService';
+export { DashboardService } from './services/DashboardService';
 export { DefaultService } from './services/DefaultService';
 export { InterviewsService } from './services/InterviewsService';
