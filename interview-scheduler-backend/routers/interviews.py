@@ -1,7 +1,7 @@
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from sqlmodel import Session, select, and_, or_
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 import uuid
 
@@ -54,6 +54,12 @@ def create_interview(interview: InterviewCreate, background_tasks: BackgroundTas
 
     if interview.start_time >= interview.end_time:
         raise HTTPException(status_code=400, detail="start_time must be before end_time")
+
+    duration = interview.end_time - interview.start_time
+    if duration < timedelta(minutes=30):
+        raise HTTPException(status_code=400, detail="Interview duration must be at least 30 minutes")
+    if duration > timedelta(hours=2):
+        raise HTTPException(status_code=400, detail="Interview duration must not exceed 2 hours")
 
     conflict = _has_overlap(
         session=session,

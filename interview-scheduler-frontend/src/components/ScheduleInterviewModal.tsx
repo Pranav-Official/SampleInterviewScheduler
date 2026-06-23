@@ -104,6 +104,14 @@ export function ScheduleInterviewModal({
                 if (new Date(value) <= new Date()) {
                   return 'End time must be in the future';
                 }
+                const durationMs = new Date(value).getTime() - new Date(start).getTime();
+                const durationMin = durationMs / 60000;
+                if (durationMin < 30) {
+                  return 'Duration must be at least 30 minutes';
+                }
+                if (durationMin > 120) {
+                  return 'Duration must not exceed 2 hours';
+                }
                 return true;
               },
             })}
