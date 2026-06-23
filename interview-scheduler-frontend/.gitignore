@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OpenAPI spec (fetched from backend)
+openapi.json
