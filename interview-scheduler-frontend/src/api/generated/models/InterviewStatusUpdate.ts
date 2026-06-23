@@ -5,5 +5,6 @@
 import type { InterviewStatus } from './InterviewStatus';
 export type InterviewStatusUpdate = {
     status: InterviewStatus;
+    changed_by?: (string | null);
 };
 

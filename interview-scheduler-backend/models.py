@@ -71,3 +71,15 @@ class InterviewUpdate(SQLModel):
 
 class InterviewStatusUpdate(SQLModel):
     status: InterviewStatus
+    changed_by: Optional[str] = None
+
+
+class InterviewAuditLog(SQLModel, table=True):
+    __tablename__ = "interview_audit_logs"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    interview_id: uuid.UUID = Field(foreign_key="interviews.id", index=True)
+    previous_status: Optional[InterviewStatus] = None
+    new_status: InterviewStatus
+    changed_by: Optional[str] = None
+    changed_at: datetime = Field(default_factory=datetime.utcnow)

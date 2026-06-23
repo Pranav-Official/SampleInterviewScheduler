@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { CandidatesService, InterviewsService, DashboardService, InterviewStatus } from '../api';
-import type { Candidate, Interview } from '../api/types';
+import type { Candidate, Interview, AuditLog } from '../api/types';
 
 // ---- Query keys ----
 export const queryKeys = {
   interviews: (filters?: Record<string, unknown>) => ['interviews', filters ?? {}] as const,
   candidates: (filters?: Record<string, unknown>) => ['candidates', filters ?? {}] as const,
   dashboard: () => ['dashboard'] as const,
+  auditLogs: (interviewId: string) => ['auditLogs', interviewId] as const,
 };
 
 // ---- Interviews ----
@@ -29,6 +30,18 @@ export function useInterviewsQuery(status?: string, startTime?: string, endTime?
         return [];
       }
     },
+  });
+}
+
+export function useInterviewAuditLogsQuery(interviewId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.auditLogs(interviewId ?? ''),
+    queryFn: async () => {
+      if (!interviewId) return [];
+      const result = await InterviewsService.getInterviewAuditLogsInterviewsInterviewIdAuditLogsGet(interviewId);
+      return (result as { audit_logs: AuditLog[] }).audit_logs ?? [];
+    },
+    enabled: !!interviewId,
   });
 }
 
@@ -110,11 +123,15 @@ export function useCreateInterviewMutation() {
 export function useUpdateInterviewStatusMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ interviewId, status }: { interviewId: string; status: InterviewStatus }) =>
-      InterviewsService.updateInterviewStatusInterviewsInterviewIdStatusPatch(interviewId, { status }),
-    onSuccess: () => {
+    mutationFn: ({ interviewId, status, changedBy }: { interviewId: string; status: InterviewStatus; changedBy?: string }) =>
+      InterviewsService.updateInterviewStatusInterviewsInterviewIdStatusPatch(interviewId, {
+        status,
+        changed_by: changedBy,
+      }),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['interviews'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs(variables.interviewId) });
     },
   });
 }

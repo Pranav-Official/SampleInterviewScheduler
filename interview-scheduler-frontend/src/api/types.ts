@@ -29,6 +29,15 @@ export const statusColors: Record<string, string> = {
   Cancelled: 'bg-red-100 text-red-700',
 };
 
+export interface AuditLog {
+  id: string;
+  interview_id: string;
+  previous_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  changed_at: string;
+}
+
 export const validTransitions: Record<string, InterviewStatus[]> = {
   Scheduled: [InterviewStatus.COMPLETED, InterviewStatus.CANCELLED],
   Completed: [],

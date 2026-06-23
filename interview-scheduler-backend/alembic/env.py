@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv()
 
 from sqlmodel import SQLModel
-from models import Candidate, Interview  # noqa: F401
+from models import Candidate, Interview, InterviewAuditLog  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

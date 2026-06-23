@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 import uuid
 
-from models import Interview, InterviewCreate, InterviewUpdate, InterviewStatusUpdate, InterviewStatus, Candidate
+from models import Interview, InterviewCreate, InterviewUpdate, InterviewStatusUpdate, InterviewStatus, InterviewAuditLog, Candidate
 from database import get_session
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
@@ -75,6 +75,15 @@ def create_interview(interview: InterviewCreate, session: Session = Depends(get_
         modifiedat=datetime.utcnow(),
     )
     session.add(db_interview)
+
+    audit = InterviewAuditLog(
+        interview_id=db_interview.id,
+        previous_status=None,
+        new_status=InterviewStatus.SCHEDULED,
+        changed_by=interview.recruiter_name,
+        changed_at=datetime.utcnow(),
+    )
+    session.add(audit)
     session.commit()
     session.refresh(db_interview)
     return db_interview
@@ -97,12 +106,37 @@ def update_interview_status(
             detail=f"Cannot transition from '{interview.status.value}' to '{body.status.value}'",
         )
 
+    previous_status = interview.status
+
+    audit = InterviewAuditLog(
+        interview_id=interview.id,
+        previous_status=previous_status,
+        new_status=body.status,
+        changed_by=body.changed_by,
+        changed_at=datetime.utcnow(),
+    )
+    session.add(audit)
+
     interview.status = body.status
     interview.modifiedat = datetime.utcnow()
     session.add(interview)
     session.commit()
     session.refresh(interview)
     return interview
+
+
+@router.get("/{interview_id}/audit-logs")
+def get_interview_audit_logs(interview_id: uuid.UUID, session: Session = Depends(get_session)):
+    interview = session.get(Interview, interview_id)
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found")
+
+    logs = session.exec(
+        select(InterviewAuditLog)
+        .where(InterviewAuditLog.interview_id == interview_id)
+        .order_by(InterviewAuditLog.changed_at.desc())
+    ).all()
+    return {"audit_logs": logs}
 
 
 @router.get("/")

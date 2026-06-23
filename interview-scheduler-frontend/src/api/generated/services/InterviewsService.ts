@@ -40,7 +40,7 @@ export class InterviewsService {
      * @throws ApiError
      */
     public static getInterviewsInterviewsGet(
-        limit: number = 10,
+        limit: number = 100,
         offset?: number,
         candidateId?: (string | null),
         status?: (InterviewStatus | null),
@@ -82,6 +82,26 @@ export class InterviewsService {
             },
             body: requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Interview Audit Logs
+     * @param interviewId
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static getInterviewAuditLogsInterviewsInterviewIdAuditLogsGet(
+        interviewId: string,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/interviews/{interview_id}/audit-logs',
+            path: {
+                'interview_id': interviewId,
+            },
             errors: {
                 422: `Validation Error`,
             },

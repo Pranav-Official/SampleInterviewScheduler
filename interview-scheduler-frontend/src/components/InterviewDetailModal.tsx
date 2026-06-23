@@ -1,9 +1,17 @@
 import toast from 'react-hot-toast';
 import type { Interview } from '../api/types';
 import { statusColors, validTransitions } from '../api/types';
-import { useUpdateInterviewStatusMutation } from '../hooks/queries';
+import { useUpdateInterviewStatusMutation, useInterviewAuditLogsQuery } from '../hooks/queries';
 import { Modal } from './Modal';
 import { InterviewStatus } from '../api';
+
+function getRecruiterName(): string {
+  try {
+    const stored = localStorage.getItem('recruiter_name');
+    if (stored) return JSON.parse(stored) as string;
+  } catch { /* ignore */ }
+  return '';
+}
 
 interface InterviewDetailModalProps {
   open: boolean;
@@ -13,12 +21,15 @@ interface InterviewDetailModalProps {
 
 export function InterviewDetailModal({ open, onClose, interview }: InterviewDetailModalProps) {
   const mutation = useUpdateInterviewStatusMutation();
+  const { data: auditLogs = [] } = useInterviewAuditLogsQuery(
+    open ? interview?.id : undefined,
+  );
 
   if (!interview) return null;
 
   const handleStatusUpdate = (newStatus: InterviewStatus) => {
     mutation.mutate(
-      { interviewId: interview.id, status: newStatus },
+      { interviewId: interview.id, status: newStatus, changedBy: getRecruiterName() || undefined },
       {
         onSuccess: () => {
           toast.success(`Interview marked as ${newStatus}`);
@@ -62,8 +73,8 @@ export function InterviewDetailModal({ open, onClose, interview }: InterviewDeta
             <p className="text-sm font-medium text-slate-900">{interview.recruiter_name}</p>
           </div>
           <div className="bg-slate-50 rounded-lg p-3">
-            <p className="text-xs font-medium text-slate-500 mb-1">Candidate ID</p>
-            <p className="text-xs text-slate-700 font-mono truncate">{interview.candidate_id}</p>
+            <p className="text-xs font-medium text-slate-500 mb-1">Candidate</p>
+            <p className="text-sm font-medium text-slate-900 truncate">{interview.candidate_name || interview.candidate_id}</p>
           </div>
         </div>
 
@@ -117,6 +128,42 @@ export function InterviewDetailModal({ open, onClose, interview }: InterviewDeta
           <p className="text-xs text-slate-400 text-center pt-2 border-t border-slate-200">
             This interview is {interview.status.toLowerCase()} — no further status changes allowed.
           </p>
+        )}
+
+        {auditLogs.length > 0 && (
+          <div className="pt-2 border-t border-slate-200">
+            <p className="text-xs font-medium text-slate-500 mb-2">Audit Trail</p>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {auditLogs.map((log) => (
+                <div key={log.id} className="bg-slate-50 rounded-lg p-2.5">
+                  <div className="flex items-center gap-2 text-xs">
+                    {log.previous_status ? (
+                      <>
+                        <span className={`inline-block px-1.5 py-0.5 rounded font-semibold ${statusColors[log.previous_status] ?? 'bg-slate-100 text-slate-600'}`}>
+                          {log.previous_status}
+                        </span>
+                        <span className="text-slate-400">&rarr;</span>
+                      </>
+                    ) : (
+                      <span className="text-slate-400 text-xs">Created as</span>
+                    )}
+                    <span className={`inline-block px-1.5 py-0.5 rounded font-semibold ${statusColors[log.new_status] ?? 'bg-slate-100 text-slate-600'}`}>
+                      {log.new_status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                    <span>{formatDateTime(log.changed_at)}</span>
+                    {log.changed_by && (
+                      <>
+                        <span>&middot;</span>
+                        <span>by {log.changed_by}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         <button
