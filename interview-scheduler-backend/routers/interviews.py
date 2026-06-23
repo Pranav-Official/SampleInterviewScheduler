@@ -108,10 +108,12 @@ def update_interview_status(
 @router.get("/")
 def get_interviews(
     session: Session = Depends(get_session),
-    limit: int = Query(default=10, ge=1, le=100),
+    limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     candidate_id: Optional[uuid.UUID] = Query(default=None, description="Filter by candidate ID"),
     status: Optional[InterviewStatus] = Query(default=None, description="Filter by status"),
+    start_time: Optional[datetime] = Query(default=None, description="Filter interviews with start_time >= value"),
+    end_time: Optional[datetime] = Query(default=None, description="Filter interviews with end_time <= value"),
 ):
     query = (
         select(
@@ -133,6 +135,12 @@ def get_interviews(
 
     if status:
         query = query.where(Interview.status == status)
+
+    if start_time:
+        query = query.where(Interview.start_time >= start_time)
+
+    if end_time:
+        query = query.where(Interview.end_time <= end_time)
 
     rows = session.exec(query.offset(offset).limit(limit)).all()
     return {"interviews": [dict(row._mapping) for row in rows], "limit": limit, "offset": offset}

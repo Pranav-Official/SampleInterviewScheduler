@@ -1,13 +1,11 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useCreateCandidateMutation } from '../hooks/queries';
 import { Modal } from './Modal';
-import { CandidatesService } from '../api';
 
 interface AddCandidateModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
 }
 
 interface FormData {
@@ -18,14 +16,13 @@ interface FormData {
   skills: string;
 }
 
-export function AddCandidateModal({ open, onClose, onSuccess }: AddCandidateModalProps) {
-  const [loading, setLoading] = useState(false);
+export function AddCandidateModal({ open, onClose }: AddCandidateModalProps) {
+  const mutation = useCreateCandidateMutation();
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
 
-  const onSubmit = async (data: FormData) => {
-    setLoading(true);
-    try {
-      await CandidatesService.createCandidateCandidatesPost({
+  const onSubmit = (data: FormData) => {
+    mutation.mutate(
+      {
         name: data.name.trim(),
         email: data.email.trim(),
         phonenumber: data.phonenumber?.trim() || null,
@@ -33,17 +30,19 @@ export function AddCandidateModal({ open, onClose, onSuccess }: AddCandidateModa
         skills: data.skills
           ? data.skills.split(',').map((s) => s.trim()).filter(Boolean)
           : [],
-      });
-      toast.success('Candidate created successfully!');
-      reset();
-      onSuccess();
-      onClose();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create candidate';
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success('Candidate created successfully!');
+          reset();
+          onClose();
+        },
+        onError: (err) => {
+          const message = err instanceof Error ? err.message : 'Failed to create candidate';
+          toast.error(message);
+        },
+      },
+    );
   };
 
   const handleClose = () => {
@@ -142,10 +141,10 @@ export function AddCandidateModal({ open, onClose, onSuccess }: AddCandidateModa
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={mutation.isPending}
             className="flex-1 py-2 px-4 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            {loading ? 'Creating...' : 'Add Candidate'}
+            {mutation.isPending ? 'Creating...' : 'Add Candidate'}
           </button>
         </div>
       </form>

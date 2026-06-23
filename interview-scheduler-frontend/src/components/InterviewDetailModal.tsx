@@ -1,35 +1,35 @@
-import { useState } from 'react';
 import toast from 'react-hot-toast';
 import type { Interview } from '../api/types';
 import { statusColors, validTransitions } from '../api/types';
+import { useUpdateInterviewStatusMutation } from '../hooks/queries';
 import { Modal } from './Modal';
-import { InterviewsService, InterviewStatus } from '../api';
+import { InterviewStatus } from '../api';
 
 interface InterviewDetailModalProps {
   open: boolean;
   onClose: () => void;
   interview: Interview | null;
-  onStatusUpdated: () => void;
 }
 
-export function InterviewDetailModal({ open, onClose, interview, onStatusUpdated }: InterviewDetailModalProps) {
-  const [updating, setUpdating] = useState(false);
+export function InterviewDetailModal({ open, onClose, interview }: InterviewDetailModalProps) {
+  const mutation = useUpdateInterviewStatusMutation();
 
   if (!interview) return null;
 
-  const handleStatusUpdate = async (newStatus: InterviewStatus) => {
-    setUpdating(true);
-    try {
-      await InterviewsService.updateInterviewStatusInterviewsInterviewIdStatusPatch(interview.id, { status: newStatus });
-      toast.success(`Interview marked as ${newStatus}`);
-      onStatusUpdated();
-      onClose();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update status';
-      toast.error(message);
-    } finally {
-      setUpdating(false);
-    }
+  const handleStatusUpdate = (newStatus: InterviewStatus) => {
+    mutation.mutate(
+      { interviewId: interview.id, status: newStatus },
+      {
+        onSuccess: () => {
+          toast.success(`Interview marked as ${newStatus}`);
+          onClose();
+        },
+        onError: (err) => {
+          const message = err instanceof Error ? err.message : 'Failed to update status';
+          toast.error(message);
+        },
+      },
+    );
   };
 
   const transitions = validTransitions[interview.status] ?? [];
@@ -98,7 +98,7 @@ export function InterviewDetailModal({ open, onClose, interview, onStatusUpdated
               {transitions.map((status) => (
                 <button
                   key={status}
-                  disabled={updating}
+                  disabled={mutation.isPending}
                   onClick={() => handleStatusUpdate(status)}
                   className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 ${
                     status === InterviewStatus.COMPLETED
@@ -106,7 +106,7 @@ export function InterviewDetailModal({ open, onClose, interview, onStatusUpdated
                       : 'bg-red-600 text-white hover:bg-red-700'
                   }`}
                 >
-                  {updating ? 'Updating...' : `Mark ${status}`}
+                  {mutation.isPending ? 'Updating...' : `Mark ${status}`}
                 </button>
               ))}
             </div>

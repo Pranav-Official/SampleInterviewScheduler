@@ -1,33 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { useState } from 'react';
 import type { Interview } from '../api/types';
 import { statusColors } from '../api/types';
-import { InterviewsService, InterviewStatus } from '../api';
+import { useInterviewsQuery } from '../hooks/queries';
 import { InterviewDetailModal } from './InterviewDetailModal';
 
 export function InterviewsTable() {
-  const [interviews, setInterviews] = useState<Interview[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
-
-  const fetchInterviews = useCallback(async () => {
-    setLoading(true);
-    try {
-      const status = statusFilter ? (statusFilter as InterviewStatus) : undefined;
-      const result = await InterviewsService.getInterviewsInterviewsGet(50, 0, undefined, status);
-      const data = result as { interviews: Interview[] };
-      setInterviews(data.interviews ?? []);
-    } catch {
-      toast.error('Failed to load interviews');
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter]);
-
-  useEffect(() => {
-    fetchInterviews();
-  }, [fetchInterviews]);
+  const { data: interviews = [], isLoading } = useInterviewsQuery(statusFilter);
 
   const formatDateTime = (iso: string) =>
     new Date(iso).toLocaleString('en-US', {
@@ -36,12 +16,8 @@ export function InterviewsTable() {
     });
 
   return (
-    <div className="mt-8">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-0.5">Interviews</h3>
-          <p className="text-sm text-slate-500">Recent interview activity</p>
-        </div>
+    <div>
+      <div className="flex items-center justify-end mb-4">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -55,7 +31,7 @@ export function InterviewsTable() {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {loading ? (
+        {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
             <p className="mt-2 text-sm text-slate-500">Loading interviews...</p>
@@ -112,7 +88,6 @@ export function InterviewsTable() {
         open={!!selectedInterview}
         onClose={() => setSelectedInterview(null)}
         interview={selectedInterview}
-        onStatusUpdated={fetchInterviews}
       />
     </div>
   );

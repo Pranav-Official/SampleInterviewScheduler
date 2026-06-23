@@ -1,20 +1,14 @@
-import { useState, useRef } from 'react';
-import toast from 'react-hot-toast';
+import { useState } from 'react';
+import { useDashboardMetricsQuery } from '../hooks/queries';
 import { AddCandidateModal } from './AddCandidateModal';
 import { CandidatesListPage } from './CandidatesListPage';
 import { InterviewsTable } from './InterviewsTable';
-import { DashboardService } from '../api';
+import { InterviewCalendar } from './InterviewCalendar';
 
 interface DashboardPageProps {
   recruiterName: string;
   onLogout: () => void;
 }
-
-const defaultMetrics = [
-  { label: 'Total Candidates', value: '—', icon: 'users', color: 'bg-indigo-100 text-indigo-600' },
-  { label: 'Interviews Scheduled', value: '—', icon: 'calendar', color: 'bg-amber-100 text-amber-600' },
-  { label: 'Interviews Completed', value: '—', icon: 'check', color: 'bg-emerald-100 text-emerald-600' },
-];
 
 function MetricIcon({ icon }: { icon: string }) {
   if (icon === 'users') {
@@ -40,27 +34,23 @@ function MetricIcon({ icon }: { icon: string }) {
 
 export function DashboardPage({ recruiterName, onLogout }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'candidates'>('dashboard');
+  const [interviewView, setInterviewView] = useState<'list' | 'calendar'>('calendar');
   const [showAddCandidate, setShowAddCandidate] = useState(false);
-  const [metrics, setMetrics] = useState(defaultMetrics);
-  const fetched = useRef(false);
+  const { data: metricsData } = useDashboardMetricsQuery();
 
-  if (!fetched.current) {
-    fetched.current = true;
-    DashboardService.dashboardDashboardGet().then((result) => {
-      const data = result as {
-        total_candidates: number;
-        total_scheduled_interviews: number;
-        total_completed_interviews: number;
-      };
-      setMetrics([
-        { label: 'Total Candidates', value: String(data.total_candidates ?? 0), icon: 'users', color: 'bg-indigo-100 text-indigo-600' },
-        { label: 'Interviews Scheduled', value: String(data.total_scheduled_interviews ?? 0), icon: 'calendar', color: 'bg-amber-100 text-amber-600' },
-        { label: 'Interviews Completed', value: String(data.total_completed_interviews ?? 0), icon: 'check', color: 'bg-emerald-100 text-emerald-600' },
-      ]);
-    }).catch(() => {
-      toast.error('Failed to load dashboard metrics');
-    });
-  }
+  const defaultMetrics = [
+    { label: 'Total Candidates', value: '—', icon: 'users', color: 'bg-indigo-100 text-indigo-600' },
+    { label: 'Interviews Scheduled', value: '—', icon: 'calendar', color: 'bg-amber-100 text-amber-600' },
+    { label: 'Interviews Completed', value: '—', icon: 'check', color: 'bg-emerald-100 text-emerald-600' },
+  ];
+
+  const metrics = metricsData
+    ? [
+        { label: 'Total Candidates', value: String(metricsData.total_candidates ?? 0), icon: 'users', color: 'bg-indigo-100 text-indigo-600' },
+        { label: 'Interviews Scheduled', value: String(metricsData.total_scheduled_interviews ?? 0), icon: 'calendar', color: 'bg-amber-100 text-amber-600' },
+        { label: 'Interviews Completed', value: String(metricsData.total_completed_interviews ?? 0), icon: 'check', color: 'bg-emerald-100 text-emerald-600' },
+      ]
+    : defaultMetrics;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -133,42 +123,42 @@ export function DashboardPage({ recruiterName, onLogout }: DashboardPageProps) {
               ))}
             </div>
 
-            {/* <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">Quick Actions</h3>
-              <p className="text-sm text-slate-500">Manage candidates and interviews</p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-0.5">Interviews</h3>
+                <p className="text-sm text-slate-500">Recent interview activity</p>
+              </div>
+              <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
+                <button
+                  onClick={() => setInterviewView('list')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    interviewView === 'list'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                  List
+                </button>
+                <button
+                  onClick={() => setInterviewView('calendar')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    interviewView === 'calendar'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Calendar
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button
-                onClick={() => setShowAddCandidate(true)}
-                className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:border-indigo-300 hover:shadow-sm transition-all group"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
-                    <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
-                    </svg>
-                  </div>
-                  <span className="font-medium text-slate-900">Add a Candidate</span>
-                </div>
-                <p className="text-sm text-slate-500">Register a new candidate into the system</p>
-              </button>
-
-              <div className="bg-white rounded-xl border border-slate-200 p-5 text-left opacity-60 cursor-not-allowed">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                    </svg>
-                  </div>
-                  <span className="font-medium text-slate-900">Schedule an Interview</span>
-                  <span className="ml-auto text-xs font-medium bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Coming soon</span>
-                </div>
-                <p className="text-sm text-slate-500">Book an interview slot with a candidate</p>
-              </div>
-            </div> */}
-
-            <InterviewsTable />
+            {interviewView === 'list' ? <InterviewsTable /> : <InterviewCalendar />}
           </>
         ) : (
           <CandidatesListPage />
@@ -178,7 +168,6 @@ export function DashboardPage({ recruiterName, onLogout }: DashboardPageProps) {
       <AddCandidateModal
         open={showAddCandidate}
         onClose={() => setShowAddCandidate(false)}
-        onSuccess={() => {}}
       />
     </div>
   );

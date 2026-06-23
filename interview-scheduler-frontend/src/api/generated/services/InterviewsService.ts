@@ -34,6 +34,8 @@ export class InterviewsService {
      * @param offset
      * @param candidateId Filter by candidate ID
      * @param status Filter by status
+     * @param startTime Filter interviews with start_time >= value
+     * @param endTime Filter interviews with end_time <= value
      * @returns any Successful Response
      * @throws ApiError
      */
@@ -42,6 +44,8 @@ export class InterviewsService {
         offset?: number,
         candidateId?: (string | null),
         status?: (InterviewStatus | null),
+        startTime?: (string | null),
+        endTime?: (string | null),
     ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -51,6 +55,8 @@ export class InterviewsService {
                 'offset': offset,
                 'candidate_id': candidateId,
                 'status': status,
+                'start_time': startTime,
+                'end_time': endTime,
             },
             errors: {
                 422: `Validation Error`,

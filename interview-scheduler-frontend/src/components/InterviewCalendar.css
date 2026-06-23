@@ -1,0 +1,65 @@
+.rbc-header {
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: #64748b;
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rbc-date-cell {
+  font-size: 0.8rem;
+  color: #334155;
+  padding: 4px;
+  text-align: center;
+}
+
+.rbc-date-cell a {
+  color: #334155;
+}
+
+.rbc-today {
+  background-color: #eef2ff;
+}
+
+.rbc-off-range-bg {
+  background-color: #f8fafc;
+}
+
+.rbc-off-range a {
+  color: #94a3b8;
+}
+
+.rbc-day-bg + .rbc-day-bg {
+  border-left: 1px solid #e2e8f0;
+}
+
+.rbc-month-row + .rbc-month-row {
+  border-top: 1px solid #e2e8f0;
+}
+
+.rbc-row-bg {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rbc-month-header {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rbc-selected-cell {
+  background-color: transparent;
+}
+
+.rbc-event {
+  border: none;
+  box-shadow: none;
+}
+
+.rbc-show-more {
+  font-size: 0.7rem;
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.rbc-row-segment {
+  padding: 1px 2px;
+}

@@ -1,15 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { useState } from 'react';
 import type { Candidate } from '../api/types';
 import { useDebounce } from '../hooks/useDebounce';
-import { CandidatesService } from '../api';
+import { useCandidatesQuery } from '../hooks/queries';
 import { CandidateDetailModal } from './CandidateDetailModal';
 import { AddCandidateModal } from './AddCandidateModal';
 import { ScheduleInterviewModal } from './ScheduleInterviewModal';
 
 export function CandidatesListPage() {
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(true);
   const [nameFilter, setNameFilter] = useState('');
   const [skillsFilter, setSkillsFilter] = useState('');
   const [experienceFilter, setExperienceFilter] = useState('');
@@ -21,38 +18,11 @@ export function CandidatesListPage() {
   const debouncedSkills = useDebounce(skillsFilter, 300);
   const debouncedExperience = useDebounce(experienceFilter, 300);
 
+  const { data: candidates = [], isLoading } = useCandidatesQuery(debouncedName, debouncedSkills, debouncedExperience);
+
   const recruiterName = localStorage.getItem('recruiter_name')
     ? JSON.parse(localStorage.getItem('recruiter_name')!)
     : '';
-
-  const fetchCandidates = useCallback(async () => {
-    setLoading(true);
-    try {
-      const experience = debouncedExperience ? Number(debouncedExperience) : undefined;
-      const skills = debouncedSkills
-        ? debouncedSkills.split(',').map((s) => s.trim()).filter(Boolean)
-        : undefined;
-      const name = debouncedName.trim() || undefined;
-
-      const result = await CandidatesService.getCandidatesCandidatesGet(
-        50,
-        0,
-        name,
-        skills,
-        experience,
-      );
-      const data = result as { candidates: Candidate[] };
-      setCandidates(data.candidates ?? []);
-    } catch {
-      toast.error('Failed to load candidates');
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedName, debouncedSkills, debouncedExperience]);
-
-  useEffect(() => {
-    fetchCandidates();
-  }, [fetchCandidates]);
 
   return (
     <div>
@@ -118,7 +88,7 @@ export function CandidatesListPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {loading ? (
+        {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
             <p className="mt-2 text-sm text-slate-500">Loading candidates...</p>
@@ -195,7 +165,6 @@ export function CandidatesListPage() {
       <AddCandidateModal
         open={showAddCandidate}
         onClose={() => setShowAddCandidate(false)}
-        onSuccess={fetchCandidates}
       />
 
       <ScheduleInterviewModal
